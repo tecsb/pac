@@ -84,7 +84,7 @@ for k,u in districtUrl.items():
             except:
                 pass
 
-            sql_v.append((name, lat, lng, address, k))
+            sql_v.append((name, 0, 0,0, k))
             print "\r\r\r",
             print u"正在下载 %s 的数据,第 %d 页,共 %d 条，当前:".encode('gbk') %(k.encode('gbk'),p, total) + string.rjust(str(i),3).encode('gbk'),
             time.sleep(0.5) #每次抓取停顿
