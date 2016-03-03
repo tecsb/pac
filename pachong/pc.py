@@ -72,17 +72,21 @@ for k,u in districtUrl.items():
                 raw_input()
             #有少量小区未设置经纬度信息
             #只能得到它的地址了
+            # try:
+            #     latlng = page.xpath(u"//a[@class='comm_map']")[0]
+            #     lat = latlng.get('lat')
+            #     lng = latlng.get('lng')
+            #     address = latlng.get('address')
+            # except:
+            #     lat = ''
+            #     lng = ''
+            #     address = page.xpath(u"//span[@class='rightArea']/em")[0].text
             try:
-                latlng = page.xpath(u"//a[@class='comm_map']")[0]
-                lat = latlng.get('lat')
-                lng = latlng.get('lng')
-                address = latlng.get('address')
+                price = page.xpath(u"//i[@class='f4']")[0].text
+                print price
             except:
-                lat = ''
-                lng = ''
-                address = page.xpath(u"//span[@class='rightArea']/em")[0].text
-            print name,lat,lng,address,k,'\r'
-            sql_v.append((name, lat, lng, address, k))
+                pass
+            sql_v.append((name, 0, 0, 0, k))
             print "\r\r\r",
             print u"正在下载 %s 的数据,第 %d 页,共 %d 条，当前:".encode('gbk') %(k.encode('gbk'),p, total) + string.rjust(str(i),3).encode('gbk'),
             time.sleep(0.5) #每次抓取停顿
