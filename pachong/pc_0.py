@@ -8,6 +8,9 @@ import time
 import string
 import random
 from lxml import etree
+import sys
+reload(sys)
+sys.setdefaultencoding('utf-8')
 #ua头信息 get时可以随机使用
 
 
@@ -29,7 +32,7 @@ def search(conn,cursor):
     #链接<a href="/database/database.html" target="_blank">数据库</a>
     # conn = MySQLdb.connect('localhost', '*****', '******', '***', charset='utf8')
     # cursor = conn.cursor()
-    # sql = "insert into xiaoqu (name, lat, lng, address, district) values (%s, %s, %s, %s, %s)"
+    sql = "insert into house values(?,?,?,?,?,?,?,?)"
     sql_v = []
     page = etree.HTML(req.text)
     districtHTML = page.xpath(u"//div[@class='listcont cont_hei']")[0]
@@ -69,19 +72,17 @@ def search(conn,cursor):
                     print name
                 except:
                     print a.get('href')
-                    print r.text
-                    raw_input()
                 #有少量小区未设置经纬度信息
                 #只能得到它的地址了
-                # try:
-                #     latlng = page.xpath(u"//a[@class='comm_map']")[0]
-                #     lat = latlng.get('lat')
-                #     lng = latlng.get('lng')
-                #     address = latlng.get('address')
-                # except:
-                #     lat = ''
-                #     lng = ''
-                #     address = page.xpath(u"//span[@class='rightArea']/em")[0].text
+                try:
+                    latlng = page.xpath(u"//a[@class='comm_map']")[0]
+                    lat = latlng.get('lat')
+                    lng = latlng.get('lng')
+                    # address = latlng.get('address')
+                except:
+                    lat = ''
+                    lng = ''
+                    # address = page.xpath(u"//span[@class='rightArea']/em")[0].text
                 try:
                     price = page.xpath(u"//i[@class='f4']")[0].text
 
@@ -101,14 +102,16 @@ def search(conn,cursor):
                 except:
                     address=u'未知'
 
-                sql_v.append((name, price, inc,a.get('href'),address, k))
+                sql_v.append((a.get('href'),name, price, inc,address,lat,lng, k))
                 print "\r\r\r",
                 print u"正在下载 %s 的数据,第 %d 页,共 %d 条，当前:".encode('gbk') %(k.encode('gbk'),p, total) + string.rjust(str(i),3).encode('gbk'),
-                time.sleep(0.5) #每次抓取停顿
+                time.sleep(0.2) #每次抓取停顿
             #执行插入数据库
-            # cursor.executemany(sql, sql_v)
+            for i in sql_v:
+                cursor.execute(sql, i)
+            conn.commit()
             sql_v = []
-            time.sleep(5)  #每页完成后停顿
+            time.sleep(3)  #每页完成后停顿
             total_all += total
             print ''
             print u"成功入库 %d 条数据，总数 %d".encode('gbk') % (total, total_all)
@@ -122,23 +125,31 @@ def search(conn,cursor):
     print u'所有数据采集完成! 共 %d 条数据'.encode('gbk') % (total_all)
     raw_input()
 def start_db():
-    conn  = sqlite3.connect('test.db')
+    conn  = sqlite3.connect('test2.db')
     cursor = conn.cursor()
-    sql="CREATE TABLE IF NOT EXISTS house (commuid varchar(50) primary key,name varchar(20),price varchar(20),inc varchar(20),address varchar(100),id integer)";
+    sql="CREATE TABLE IF NOT EXISTS house (commuid varchar(50),name varchar(20),price varchar(20),inc varchar(20),address varchar(100),lat varchar(20),lng varchar(20),id integer)";
     cursor.execute(sql)
     conn.commit()
     cursor.close()
     conn.close()
 if __name__ == '__main__':
     # start_db()
-    conn  = sqlite3.connect('test.db')
-    cursor = conn.cursor()
-    # cursor.execute("insert into house values (?,?,?,?,?,?)",(0,0,0,0,0,0))
-    # conn.commit()
-    cursor.execute('select * from house')
 
-    for item in cursor.fetchall():
-        print item
+    conn  = sqlite3.connect('test2.db')
+    cursor = conn.cursor()
+    # search(conn,cursor)
+    j = cursor.execute('select * from house')
+    for i in j:
+        try:
+           print i[1],i[2],i[3],i[4]
+        except:
+           s = i[0].replace(u'\u2022','')
+           s = s.replace(u'\u30fb','')
+           print s
+    import pandas as pa
+    df = pa.read_sql_query('select * from house',conn)
+    # print df.head()
+    df.to_excel('123.xls')
     # cursor.execute('delete from house where id =0')
     # conn.commit()
     cursor.close()
