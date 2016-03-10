@@ -16,6 +16,8 @@ sys.setdefaultencoding('utf-8')
 
 def search(conn,cursor):
     headers = [
+        {'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko'},
+        {'User-Agent','Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'},
         { "User-Agent":"Mozilla/5.0 (Linux; U; Android 4.1; en-us; GT-N7100 Build/JRO03C) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30"},
         { "User-Agent":"Mozilla/5.0 (compatible; MSIE 10.0; Windows Phone 8.0; Trident/6.0; IEMobile/10.0; ARM; Touch; NOKIA; Lumia 520)"},
         { "User-Agent":"Mozilla/5.0 (BB10; Touch) AppleWebKit/537.10+ (KHTML, like Gecko) Version/10.0.9.2372 Mobile Safari/537.10+"},
@@ -45,10 +47,20 @@ def search(conn,cursor):
             i = 1
             continue
         districtUrl[a.text] = a.get('href')
-        print districtUrl[a.text]
     #开始采集
+    choosed ={}
     total_all = 0
+    for i,j in districtUrl.items():
+       print i
+       print j.rstrip('/')
+       if i== u'海淀':
+           choosed[i] = j
+    '''
     for k,u in districtUrl.items():
+    '''
+    print choosed
+    for k,u in choosed.items():
+
         p = 1 #分页
         while True:
             header_i = random.randint(0, len(headers)-1)
@@ -60,7 +72,11 @@ def search(conn,cursor):
             i = 0
             for a in communitysUrlDiv:
                 i+=1
-                r = requests.get(a.get('href'), cookies=cookie, headers=headers[header_i])
+                try:
+                    r = requests.get(a.get('href'), cookies=cookie, headers=headers[header_i])
+                except:
+                    time.sleep(1)
+                    continue
                 #抓取时发现有少量404页会直接导致程序报错退出- -!
                 #唉 说明代码写的还不够健壮啊
                 #加了if判断和try， 错误时可以跳过或做一些简单处理和调试...
@@ -105,7 +121,7 @@ def search(conn,cursor):
                 sql_v.append((a.get('href'),name, price, inc,address,lat,lng, k))
                 print "\r\r\r",
                 print u"正在下载 %s 的数据,第 %d 页,共 %d 条，当前:".encode('gbk') %(k.encode('gbk'),p, total) + string.rjust(str(i),3).encode('gbk'),
-                time.sleep(0.2) #每次抓取停顿
+                time.sleep(0.5) #每次抓取停顿
             #执行插入数据库
             for i in sql_v:
                 cursor.execute(sql, i)
@@ -138,19 +154,17 @@ if __name__ == '__main__':
     conn  = sqlite3.connect('test2.db')
     cursor = conn.cursor()
     # search(conn,cursor)
-    j = cursor.execute('select * from house')
-    for i in j:
-        try:
-           print i[1],i[2],i[3],i[4]
-        except:
-           s = i[0].replace(u'\u2022','')
-           s = s.replace(u'\u30fb','')
-           print s
-    import pandas as pa
-    df = pa.read_sql_query('select * from house',conn)
-    # print df.head()
-    df.to_excel('123.xls')
-    # cursor.execute('delete from house where id =0')
+    # cursor.execute('select * from house where id ="海淀" ')
     # conn.commit()
+    import pandas as pa
+    df = pa.read_sql_query('select * from house where id ="朝阳"',conn)
+    print len(df.commuid.tolist())
+    df2 = df.drop_duplicates(subset='commuid')
+    print len(df2.commuid.tolist())
+    # cursor.execute('delete from house where id ="海淀" ')
+    # conn.commit()
+    # df_hd =  pa.read_excel('haidian.xls')
+    # df_hd = df_hd.set_index('commuid')
+    # df_hd.to_sql('house',conn,if_exists ='append')
     cursor.close()
     conn.close()
